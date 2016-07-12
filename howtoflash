@@ -1,0 +1,20 @@
+Hardware:
+Arduino pro - pro mini
+atmega 328 16mhz
+
+Pinout board:
+
+VCC
+RXD
+TXD
+GND
+DTR
+
+The first version of the board requires a small fix inline in the flash board
+dtr(ftdi) -> 100nf (.1uf) ceramic -> dtr (board)
+
+If everything else fails:
+ - Re-flash the arduino bootloader to the atmega chip using a stk500 or something.
+ - Depending on your atmega 328 (328/328p) you may need to switch the last byte of the m328p so it ends up with 0x14
+   (locate arvdude_bin in arduino install path and set it in avrdude.conf next to it)
+
