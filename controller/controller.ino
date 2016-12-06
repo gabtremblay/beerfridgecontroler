@@ -4,6 +4,7 @@
 #include <Wire.h>
 #include "flow_meters.h"
 #include "eeprom.h"
+#include "temp_lm35.h"
 
 void setup() {
   Serial.begin(115200);   // We'll send debugging information via the Serial monitor
@@ -27,6 +28,13 @@ void loop() {
    current_values.flm1_cur_ml = meters_status.fl1_total_ml;
    current_values.flm2_cur_ml = meters_status.fl2_total_ml;
    save_eeprom_values(current_values);
+
+   // Read temp
+   float current_temp;
+   current_temp = get_temp_celcius();
+
+   Serial.print("Temperature (C): ");
+   Serial.println(current_temp);
    
    // Print the flow rate for this second in litres / minute
    Serial.print("Flow One, ");

@@ -17,6 +17,7 @@ EEPROM_VAUES get_saved_eeprom_values() {
   EEPROM_VAUES current_values;
   current_values.flm1_cur_ml = EEPROMReadlong(FLOW1_ADDR, eep);
   current_values.flm2_cur_ml = EEPROMReadlong(FLOW2_ADDR, eep);
+  current_values.fsr_val = EEPROMReadlong(FSR_ADDR, eep);
   return current_values;
 }
 
@@ -24,6 +25,7 @@ EEPROM_VAUES get_saved_eeprom_values() {
 void save_eeprom_values(EEPROM_VAUES current_values){
   EEPROMWritelong(FLOW1_ADDR, current_values.flm1_cur_ml, eep);
   EEPROMWritelong(FLOW2_ADDR, current_values.flm2_cur_ml, eep);
+  EEPROMWritelong(FSR_ADDR, current_values.fsr_val, eep);
 }
 
 
