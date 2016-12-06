@@ -1,70 +1,31 @@
 /*
  * Flow Meters
  */
-byte FLOW_METER_ONE_DATA_PIN = 2;
-byte FLOW_METER_ONE_INT_PIN = 0;  // 0 = digital pin 2
+#include "flow_meters.h"
+   
 
-byte FLOW_METER_TWO_DATA_PIN = 3;
-byte FLOW_METER_TWO_INT_PIN = 1;  // 1 = digital pin 3
-
-// State vars
-volatile int flow_meter_one_pulses;  // volatile since it will be incremented by interrupt
-float flow_meter_one_rate;
-unsigned long flow_meter_one_ml;
-
-volatile int flow_meter_two_pulses;  // volatile since it will be incremented by interrupt
-float flow_meter_two_rate;
-unsigned long flow_meter_two_ml;
-
-// Time keeping for accurate measure
-unsigned long old_time;
-
-// The hall-effect flow sensor outputs approximately 4 pulses per second per litre/minute of flow.
-// Adjust to your own flow meter values
-// Could vary between 1 and 100 depending on sensor model
-float CALIBRATION_FACTOR = 75.0;
-
-
-// Serial resettable values, used for counting purposes
-// Should be loaded and saved to eeprom
-unsigned long flow_meter_one_ml_total;
-unsigned long flow_meter_two_ml_total;
-
-
-// DEBUG
-unsigned long flow_meter_test_start;
-unsigned long flow_meter_test_took;
-boolean flow_test_started = false;
-boolean flow_test_ended = false;
-
-
-void setup_flow_meters(void) {
+void setup_flow_meters(float fl1_total_eeprom, float fl2_total_eeprom) {
   pinMode(FLOW_METER_ONE_DATA_PIN, INPUT);
   digitalWrite(FLOW_METER_ONE_DATA_PIN, HIGH);
   
   pinMode(FLOW_METER_TWO_DATA_PIN, INPUT);
   digitalWrite(FLOW_METER_TWO_DATA_PIN, HIGH);
-  
+
+  // Init pulses
   flow_meter_one_pulses = 0;
   flow_meter_two_pulses = 0;
-  flow_meter_one_rate = 0.0;
-  flow_meter_one_ml   = 0;
-  flow_meter_two_rate = 0.0;
-  flow_meter_two_ml   = 0;
-
+  flow_meter_one_rate = 0;
+  flow_meter_two_rate = 0;
   old_time = 0;
   
-  // TAKE FROM EEPROM
-  flow_meter_one_ml_total = 0;
-  flow_meter_two_ml_total = 0;
+  meters_status.fl1_total_ml = fl1_total_eeprom;
+  meters_status.fl2_total_ml = fl2_total_eeprom;
+  meters_status.fl1_rate_mlsec = 0;
+  meters_status.fl2_rate_mlsec = 0;
 
-  // debug
-  flow_meter_test_start = 0;
-  flow_meter_test_took = 0;
+  // Start
   attach_flow_interrupts();
 }
-
-
 
 /*
 Insterrupt callbacks
@@ -93,8 +54,8 @@ void detach_flow_interrupts(void){
 
 
 // Flow computation
-void compute_flow_meters_ml(void)
-{
+FLOW_METERS compute_flow_meters_ml(void)
+{  
    // Only process counters once per second
    if((millis() - old_time) > 1000) 
    { 
@@ -118,55 +79,13 @@ void compute_flow_meters_ml(void)
     // Divide the flow rate in litres/minute by 60 to determine how many litres have
     // passed through the sensor in this 1 second interval, then multiply by 1000 to
     // convert to millilitres.
-    flow_meter_one_ml = (flow_meter_one_rate / 60) * 1000;
-    flow_meter_two_ml = (flow_meter_two_rate / 60) * 1000;
+    meters_status.fl1_rate_mlsec = (flow_meter_one_rate / 60) * 1000;
+    meters_status.fl2_rate_mlsec = (flow_meter_two_rate / 60) * 1000;
 
 
     // Sum everything
-    flow_meter_one_ml_total += flow_meter_one_ml;
-    flow_meter_two_ml_total += flow_meter_two_ml;
-
-    // DEBUG
-    if(flow_meter_one_ml_total > 0 and flow_test_started == false){
-      flow_test_started = true;
-      Serial.println("Flow test started");
-      flow_meter_test_start = millis();
-    }
-
-    if(flow_test_started and flow_meter_one_ml_total >= 1000){
-      if(flow_test_ended == false){
-        flow_meter_test_took = millis() - flow_meter_test_start;
-        Serial.print("Flowing One Liter took: ");
-        Serial.print(flow_meter_test_took);
-        Serial.println("ms");
-        flow_test_ended = true;
-      }
-    }
-  
-    // Print the flow rate for this second in litres / minute
-    Serial.print("Flow One rate: ");
-    Serial.print(int(flow_meter_one_rate));  // Print the integer part of the variable
-    Serial.print(".");             // Print the decimal point
-    // Print the number of litres flowed in this second
-    Serial.print("  Current Liquid Flowing: ");             // Output separator
-    Serial.print(flow_meter_one_ml);
-    Serial.print("mL/Sec");
-    Serial.print(",  Total:  ");
-    Serial.print(flow_meter_one_ml_total);
-    Serial.println("mL");
-    
-    // Print the flow rate for this second in litres / minute
-    Serial.print("Flow Two rate: ");
-    Serial.print(int(flow_meter_two_rate));  // Print the integer part of the variable
-    Serial.print(".");             // Print the decimal point
-    
-    // Print the number of litres flowed in this second
-    Serial.print("  Current Liquid Flowing: ");             // Output separator
-    Serial.print(flow_meter_two_ml);
-    Serial.print("mL/Sec");
-    Serial.print(",  Total:  ");
-    Serial.print(flow_meter_two_ml_total);
-    Serial.println("mL");
+    meters_status.fl1_total_ml += meters_status.fl1_rate_mlsec ;
+    meters_status.fl2_total_ml += meters_status.fl2_rate_mlsec ;
 
     // Reset the pulse counter so we can start incrementing again
     flow_meter_one_pulses = 0;
@@ -174,6 +93,8 @@ void compute_flow_meters_ml(void)
     
     // Enable the interrupt again now that we've finished sending output
     attach_flow_interrupts();
+    
   }
+  return meters_status;
 }
 
