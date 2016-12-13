@@ -14,10 +14,10 @@
 // Serial resettable values, used for counting purposes
 // Should be loaded and saved to eeprom
 struct FLOW_METERS {
-  unsigned long fl1_total_ml;
-  unsigned long fl1_rate_mlsec;
-  unsigned long fl2_total_ml;
-  unsigned long fl2_rate_mlsec;
+  unsigned long fl1_total_ml = 0;
+  unsigned long fl1_rate_mlsec = 0;
+  unsigned long fl2_total_ml = 0;
+  unsigned long fl2_rate_mlsec = 0;
 };
 
 

@@ -5,6 +5,7 @@
 #include "flow_meters.h"
 #include "eeprom.h"
 #include "temp_lm35.h"
+#include "fsr.h"
 
 void setup() {
   Serial.begin(115200);   // We'll send debugging information via the Serial monitor
@@ -32,6 +33,16 @@ void loop() {
    // Read temp
    float current_temp;
    current_temp = get_temp_celcius();
+
+   // Get FSR Value
+   FSR_READOUT fsr_readout;
+   fsr_readout = get_fsr_readout();
+
+   Serial.print("Analog reading = ");
+   Serial.println(fsr_readout.raw_value);
+   Serial.print("Adjusted: ");
+   Serial.print(fsr_readout.scaled_value);
+   Serial.println("%");
 
    Serial.print("Temperature (C): ");
    Serial.println(current_temp);
