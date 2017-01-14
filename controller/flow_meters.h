@@ -1,10 +1,11 @@
 #ifndef FLOW_METERS_H
 #define FLOW_METERS_H
 
+// Arduino pin map https://www.arduino.cc/en/Hacking/PinMapping168
 #define FLOW_METER_ONE_DATA_PIN 2
-#define FLOW_METER_ONE_INT_PIN 0  // 0 = digital pin 2
+#define FLOW_METER_ONE_INT_PIN 0  // digital pin 0 = atmega pin 2
 #define FLOW_METER_TWO_DATA_PIN 3
-#define FLOW_METER_TWO_INT_PIN 1  // 1 = digital pin 3
+#define FLOW_METER_TWO_INT_PIN 1  // digital pin 1 = atmega pin 3
 
 // The hall-effect flow sensor outputs approximately 4 pulses per second per litre/minute of flow.
 // Adjust to your own flow meter values

@@ -7,6 +7,7 @@
 #define FSR_EMPTY_ADDR 64
 #define FSR_FULL_ADDR 96
 
+// Arduino pin map https://www.arduino.cc/en/Hacking/PinMapping168
 extEEPROM eep(kbits_2, 1, 16);
 
 struct EEPROM_VAUES {

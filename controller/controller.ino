@@ -1,11 +1,18 @@
 /*
- * Requires: extEEPROM
+ * Requires: extEEPROM, ArduinoJson
  */
+ // Arduino pro / pro mini
+ // 328 5.5v
+ // 
+ 
 #include <Wire.h>
 #include "flow_meters.h"
 #include "eeprom.h"
 #include "temp_lm35.h"
 #include "fsr.h"
+#include "btooth.h"
+
+#define DEBUG false
 
 void setup() {
   Serial.begin(115200);   // We'll send debugging information via the Serial monitor
@@ -18,6 +25,9 @@ void setup() {
   
   // Setup flow meter reader
   setup_flow_meters(saved_values.flm1_cur_ml, saved_values.flm2_cur_ml);
+
+  // Setup bluetooth comms
+  setup_btooth();
 }
 
 void loop() {
@@ -65,6 +75,11 @@ void loop() {
    Serial.print(",  Total:  ");
    Serial.print(meters_status.fl2_total_ml);
    Serial.println("mL");
-   
+
+   // Btooth data:
+   String btooth_data1 = "";//read_btooth_data();
+   write_btooth_data("Allo");
+   btooth_data1 = read_btooth_data();
+   Serial.println(btooth_data1);
    delay(1000); 
 }
