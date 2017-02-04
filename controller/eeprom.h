@@ -19,6 +19,10 @@ struct EEPROM_VAUES {
 
 EEPROM_VAUES get_saved_eeprom_values();
 void save_eeprom_values(EEPROM_VAUES values);
+void save_flow1_value(unsigned long value);
+void save_flow2_value(unsigned long value);
+void save_fsr_empty_value(unsigned long value);
+void save_fsr_full_value(unsigned long value);
 
 #endif
 

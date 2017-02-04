@@ -1,4 +1,4 @@
-#include "eeprom.h"
+#include "eeprom.h" 
 
 void setup_eeprom(){
   uint8_t eepStatus = eep.begin(twiClock400kHz); 
@@ -22,12 +22,28 @@ EEPROM_VAUES get_saved_eeprom_values() {
   return current_values;
 }
 
-// Save values to eeprom
+// Save bulk values to eeprom 
 void save_eeprom_values(EEPROM_VAUES current_values){
-  EEPROMWritelong(FLOW1_ADDR, current_values.flm1_cur_ml, eep);
-  EEPROMWritelong(FLOW2_ADDR, current_values.flm2_cur_ml, eep);
-  EEPROMWritelong(FSR_EMPTY_ADDR, current_values.fsr_empty_val, eep);
-  EEPROMWritelong(FSR_FULL_ADDR, current_values.fsr_full_val, eep);
+  save_flow1_value(current_values.flm1_cur_ml);
+  save_flow2_value(current_values.flm2_cur_ml);
+  save_fsr_empty_value(current_values.fsr_empty_val);
+  save_fsr_full_value(current_values.fsr_full_val);
+}
+
+void save_flow1_value(unsigned long value){
+  EEPROMWritelong(FLOW1_ADDR, value, eep);
+}
+
+void save_flow2_value(unsigned long value){
+  EEPROMWritelong(FLOW2_ADDR, value, eep);
+}
+
+void save_fsr_empty_value(unsigned long value){
+  EEPROMWritelong(FSR_EMPTY_ADDR, value, eep);
+}
+
+void save_fsr_full_value(unsigned long value){
+  EEPROMWritelong(FSR_FULL_ADDR, value, eep);
 }
 
 
