@@ -26,7 +26,7 @@
 #include "btooth.h"
 #include "SimpleTimer.h"
 
-#define DEBUG false
+#define DEBUG true
 
 // State vars
 FLOW_METERS current_meters_status;
@@ -69,6 +69,7 @@ void setup() {
 
   // Comms should have a reasonable lag. ~1s
   communicate_timer.setInterval(1000, communicate);
+
 }
 
 void loop(){
@@ -110,21 +111,24 @@ void read_fridge_data() {
     // Create save data
     save_flow2_value(current_meters_status.fl2_total_ml);
   }
+
+  #ifdef DEBUG
+    print_debug();
+  #endif
 }
 
 void communicate() {
 //Serial.println("Comms made");
 }
 
-/*
-void loop() {
-   FLOW_METERS meters_status;
-   meters_status = compute_flow_meters_ml();
+
+void print_debug() {
+   current_meters_status = compute_flow_meters_ml();
 
    Serial.print("Analog reading = ");
-   Serial.println(fsr_readout.raw_value);
+   Serial.println(current_fsr_readout.raw_value);
    Serial.print("Adjusted: ");
-   Serial.print(fsr_readout.scaled_value);
+   Serial.print(current_fsr_readout.scaled_value);
    Serial.println("%");
 
    Serial.print("Temperature (C): ");
@@ -134,19 +138,19 @@ void loop() {
    Serial.print("Flow One, ");
    // Print the number of litres flowed in this second
    Serial.print("  Current Liquid Flowing: ");             // Output separator
-   Serial.print(meters_status.fl1_rate_mlsec);
+   Serial.print(current_meters_status.fl1_rate_mlsec);
    Serial.print("mL/Sec");
    Serial.print(",  Total:  ");
-   Serial.print(meters_status.fl1_total_ml);
+   Serial.print(current_meters_status.fl1_total_ml);
    Serial.println("mL");
     
    // Print the flow rate for this second in litres / minute
    Serial.print("Flow Two, ");
    Serial.print("  Current Liquid Flowing: ");             // Output separator
-   Serial.print(meters_status.fl2_rate_mlsec);
+   Serial.print(current_meters_status.fl2_rate_mlsec);
    Serial.print("mL/Sec");
    Serial.print(",  Total:  ");
-   Serial.print(meters_status.fl2_total_ml);
+   Serial.print(current_meters_status.fl2_total_ml);
    Serial.println("mL");
 
    // Btooth data:
@@ -154,6 +158,5 @@ void loop() {
    write_btooth_data("Allo");
    btooth_data1 = read_btooth_data();
    Serial.println(btooth_data1);
-   delay(1000); 
 }
-*/
+
