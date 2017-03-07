@@ -1,21 +1,35 @@
 /*
+ * This file is part of BeerFridgeController.
+ *
+ *    BeerFridgeController is free software: you can redistribute it and/or modify
+ *    it under the terms of the GNU General Public License as published by
+ *    the Free Software Foundation, either version 3 of the License, or
+ *    (at your option) any later version.
+ *
+ *    BeerFridgeController is distributed in the hope that it will be useful,
+ *    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *    GNU General Public License for more details.
+ *
+ *    You should have received a copy of the GNU General Public License
+ *    along with BeerFridgeController.  If not, see <http://www.gnu.org/licenses/>.
+ *    
+ *    BeerFridgeController  Copyright (C) 2016-2017  Gabriel Tremblay
+ *    
+*/
+ 
+ /*
  * Requires external library: extEEPROM, ArduinoJson
  */
  // Arduino pro / pro mini
  // 328 5.5v
  // 
  // EEprom save condition are triggered after each pour or when the user sets
- // The CO2 level base or isert a new tank.
+ // the CO2 level base or isert a new tank.
  
- // Todo : Comms
- // Debug output
- // Output
- //  - fl1 rate, fl2 rate, fl1tot, fl2tot, temp, weight,
- // Input
- // Cmd : Set fl1 tot
- // Cmd : Set fl2 tot
- // Cmd : Set weight_0
- // CMd : Set weight_full
+ // Todo : Finish comms, Implement incoming commands
+// Bug: "cmd":"SET","fl1_total_ml":1098,"fl1_rate_mlsec":0,"fl2_total_ml":1405,"fl2_rate_mlsec":0,"temp_celcius":.93,"fsr_empty_val":,"fsr_current_":,":}
+
 
 
 #include <Wire.h>
@@ -25,14 +39,16 @@
 #include "fsr.h"
 #include "btooth.h"
 #include "SimpleTimer.h"
+#include "data.h"
 
 #define DEBUG true
 
 // State vars
 FLOW_METERS current_meters_status;
 float current_temp;
+EEPROM_VAUES saved_values;
 FSR_READOUT current_fsr_readout;
-  
+
 // Run timers
 SimpleTimer read_fridge_data_timer;
 SimpleTimer communicate_timer;
@@ -43,11 +59,9 @@ boolean fl2_pouring = false;
 
 // CO2 is not the same.
 // We need "empty bottle value" and "full bottle weight"
-// We save only when "FULL bottle inserted"
+// We save only when "FULL bottle Calibrated"
 // Level is always calculated between those two deltas. No need to save values live since we
 // get the weight at all time, not based on flow.
-
-// Allow for a first run command: Set everything to 0;
 
 void setup() {
   Serial.begin(115200);   // We'll send debugging information via the Serial monitor
@@ -55,7 +69,6 @@ void setup() {
   // Load saved flow data
   setup_eeprom();
   
-  EEPROM_VAUES saved_values;
   saved_values = get_saved_eeprom_values();
   
   // Setup flow meter reader
@@ -63,8 +76,14 @@ void setup() {
 
   // Setup bluetooth comms
   setup_btooth();
-  
-  // We read the data from the fridge more often to get more precision ~1000ms
+
+  // Run initial readings so we have data
+  // This is necessary since our read timer wont read before 1 sec.
+  read_fridge_data();
+
+  // We use timer so we can fine tune the sensor reads and bt comms.
+  // Otherwise it could be all sync in the loop()
+  // We read the data from the fridge ~1000ms
   read_fridge_data_timer.setInterval(1000, read_fridge_data);
 
   // Comms should have a reasonable lag. ~1s
@@ -91,11 +110,8 @@ void read_fridge_data() {
   // Flow meter 1
   if (current_meters_status.fl1_rate_mlsec > 0 && fl1_pouring == false){
     fl1_pouring = true;
-    Serial.println("Flow 1 pouring!");
   } else if (current_meters_status.fl1_rate_mlsec <= 0 && fl1_pouring == true){
-    Serial.println("Flow 1 end of pour, we should save");
     fl1_pouring = false;
-    
     // Create save data
     save_flow1_value(current_meters_status.fl1_total_ml);
   }
@@ -103,11 +119,8 @@ void read_fridge_data() {
   // Flow meter 2
   if (current_meters_status.fl2_rate_mlsec > 0 && fl2_pouring == false){
     fl2_pouring = true;
-    Serial.println("Flow 2 pouring!");
   } else if (current_meters_status.fl2_rate_mlsec <= 0 && fl2_pouring == true){
-    Serial.println("Flow 2 end of pour, we should save");
     fl2_pouring = false;
-    
     // Create save data
     save_flow2_value(current_meters_status.fl2_total_ml);
   }
@@ -118,12 +131,36 @@ void read_fridge_data() {
 }
 
 void communicate() {
+  // Generate output data
+  OUT_DATA data;
+  data.cmd = "SET";
+  data.fl1_total_ml = current_meters_status.fl1_total_ml;
+  data.fl1_rate_mlsec = current_meters_status.fl1_rate_mlsec;
+  data.fl2_total_ml = current_meters_status.fl2_total_ml;
+  data.fl2_rate_mlsec = current_meters_status.fl2_rate_mlsec;
+  data.temp_celcius = current_temp;
+  data.fsr_empty_val = saved_values.fsr_empty_val;
+  data.fsr_current_val = current_fsr_readout.raw_value;
+  data.fsr_full_val = saved_values.fsr_full_val;
+
+  String json_str = format_command(data);
+  Serial.println(json_str);
+  write_btooth_data(json_str);
+  
+  // Fill data for output
+  // Write to bluetooth
+
+     // Btooth data:
+   //String btooth_data1 = "";//read_btooth_data();
+   //write_btooth_data("Allo");
+   //btooth_data1 = read_btooth_data();
+   //Serial.println(btooth_data1);
 //Serial.println("Comms made");
 }
 
 
 void print_debug() {
-   current_meters_status = compute_flow_meters_ml();
+   //current_meters_status = compute_flow_meters_ml();
 
    Serial.print("Analog reading = ");
    Serial.println(current_fsr_readout.raw_value);
@@ -152,11 +189,5 @@ void print_debug() {
    Serial.print(",  Total:  ");
    Serial.print(current_meters_status.fl2_total_ml);
    Serial.println("mL");
-
-   // Btooth data:
-   String btooth_data1 = "";//read_btooth_data();
-   write_btooth_data("Allo");
-   btooth_data1 = read_btooth_data();
-   Serial.println(btooth_data1);
 }
 
