@@ -43,22 +43,21 @@ RCVD_CMD parse_command(String rcvd_command){
 }
 
 
-String format_command(OUT_DATA data){
-  String output;
+void format_command(OUT_DATA data, char *buf, int bufsize){
   StaticJsonBuffer<200> jsonBuffer;
   JsonObject& root = jsonBuffer.createObject();
   
   root["cmd"] = data.cmd;
-  root["fl1_total_ml"] = data.fl1_total_ml;
-  root["fl1_rate_mlsec"] = data.fl1_rate_mlsec;
-  root["fl2_total_ml"] = data.fl2_total_ml;
-  root["fl2_rate_mlsec"] = data.fl2_rate_mlsec;
-  root["temp_celcius"] = data.temp_celcius;
-  root["fsr_empty_val"] = data.fsr_empty_val;
-  root["fsr_current_val"] = data.fsr_current_val;
-  root["fsr_full_val"] = data.fsr_full_val;
-  
-  root.printTo(output);
-  return output;
+  root["fl1_total"] = data.fl1_total_ml;
+  root["fl1_rate"] = data.fl1_rate_mlsec;
+  root["fl2_total"] = data.fl2_total_ml;
+  root["fl2_rate"] = data.fl2_rate_mlsec;
+  root["temp_c"] = data.temp_celcius;
+  root["fsr_empty"] = data.fsr_empty_val;
+  root["fsr_current"] = data.fsr_current_val;
+  root["fsr_full"] = data.fsr_full_val;
+
+  Serial.println(bufsize);
+  root.printTo(buf, bufsize);
 }
 

@@ -45,7 +45,7 @@
 // cmd: in case of ok or err, all values will be 0
 // Possible values : "SET" (default), "OK", "ERR"
 struct OUT_DATA {
-  String cmd;                      
+  char *cmd;                      
   unsigned long fl1_total_ml = 0;    // Total ml that flowed trough flow meter #1 since reset
   unsigned long fl1_rate_mlsec = 0;  // Current flow rate of flow meter #1
   unsigned long fl2_total_ml = 0;    // Total ml that flowed trough flow meter #2 since reset
@@ -56,7 +56,9 @@ struct OUT_DATA {
   unsigned long fsr_full_val = 0;    // FSR value when bottle is full
 };
 
-
+// recv should be in the format of
+// {"api_key":"", "cmd":"cmd_name", "value": 0}
+// Value can be null 
 struct RCVD_CMD {
   boolean parse_success = true;
   const char* cmd;
@@ -64,6 +66,6 @@ struct RCVD_CMD {
 };
 
 RCVD_CMD parse_command(String rcvd_command);
-String format_command(OUT_DATA data);
+void format_command(OUT_DATA data, char *buf, int bufsize);
 
 #endif

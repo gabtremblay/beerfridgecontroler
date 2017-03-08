@@ -26,11 +26,12 @@
  // 
  // EEprom save condition are triggered after each pour or when the user sets
  // the CO2 level base or isert a new tank.
+
  
  // Todo : Finish comms, Implement incoming commands
-// Bug: "cmd":"SET","fl1_total_ml":1098,"fl1_rate_mlsec":0,"fl2_total_ml":1405,"fl2_rate_mlsec":0,"temp_celcius":.93,"fsr_empty_val":,"fsr_current_":,":}
-
-
+ // rework : Memory problems. We should not return so many objects.
+ // It seems we can'T properly parse the received command. is it because it lacks a \0? Or because we use a string.
+ // I still dont know.
 
 #include <Wire.h>
 #include "flow_meters.h"
@@ -131,9 +132,12 @@ void read_fridge_data() {
 }
 
 void communicate() {
+  // Use a char[] instead of a const char to save memory
+  char acmd[] = "SET";
+
   // Generate output data
   OUT_DATA data;
-  data.cmd = "SET";
+  data.cmd = acmd;
   data.fl1_total_ml = current_meters_status.fl1_total_ml;
   data.fl1_rate_mlsec = current_meters_status.fl1_rate_mlsec;
   data.fl2_total_ml = current_meters_status.fl2_total_ml;
@@ -143,19 +147,31 @@ void communicate() {
   data.fsr_current_val = current_fsr_readout.raw_value;
   data.fsr_full_val = saved_values.fsr_full_val;
 
-  String json_str = format_command(data);
-  Serial.println(json_str);
-  write_btooth_data(json_str);
-  
-  // Fill data for output
-  // Write to bluetooth
+  // We use a stack allocated buffer to reduce memory usage
+  // the kind of str we're dealing with is kind of too big for the little arduino
+  char outbuf[300];
+  format_command(data, outbuf, sizeof(outbuf));
 
-     // Btooth data:
-   //String btooth_data1 = "";//read_btooth_data();
-   //write_btooth_data("Allo");
-   //btooth_data1 = read_btooth_data();
-   //Serial.println(btooth_data1);
-//Serial.println("Comms made");
+  #ifdef DEBUG
+    Serial.println(outbuf);
+  #endif
+  
+  write_btooth_data(outbuf);
+
+  char inbuf[128];
+  read_btooth_data(inbuf, sizeof(inbuf));
+
+
+  // Looks like we need to use a string... or parse before.
+  //RCVD_CMD rcvd_cmd = parse_command(inbuf);
+  
+  //if(!rcvd_cmd.parse_success){
+   // Serial.println("PARSE ERROR");
+    
+  //}
+  #ifdef DEBUG
+    Serial.println(inbuf);
+  #endif
 }
 
 
