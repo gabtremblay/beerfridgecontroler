@@ -47,6 +47,14 @@ void setup_flow_meters(float fl1_total_eeprom, float fl2_total_eeprom) {
   attach_flow_interrupts();
 }
 
+void set_current_fl1_total_ml(unsigned long ml){
+  meters_status.fl1_total_ml = ml;
+}
+
+void set_current_fl2_total_ml(unsigned long ml){
+  meters_status.fl2_total_ml = ml;
+}
+
 /*
 Insterrupt callbacks
  */

@@ -54,5 +54,8 @@ unsigned long old_time;
 FLOW_METERS meters_status;
 
 FLOW_METERS compute_flow_meters_ml(void);
+void set_current_fl1_total_ml(unsigned long ml);
+void set_current_fl2_total_ml(unsigned long ml);
+
 
 #endif

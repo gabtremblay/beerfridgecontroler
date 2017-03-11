@@ -36,14 +36,21 @@ RCVD_CMD parse_command(String rcvd_command){
     return received_command;
   }
 
+  received_command.parse_success = true;
   received_command.cmd = root["cmd"];
   received_command.value = root["value"];
 
   return received_command;
 }
 
+void format_reply(CMD_REPLY data, char *replybuf, int replybufsize){
+  StaticJsonBuffer<32> jsonBuffer;
+  JsonObject& root = jsonBuffer.createObject();
+  root["cmd"] = data.cmd;
+  root.printTo(replybuf, replybufsize);
+}
 
-void format_command(OUT_DATA data, char *buf, int bufsize){
+void format_command(OUT_DATA data, char *cmdbuf, int cmdbufsize){
   StaticJsonBuffer<200> jsonBuffer;
   JsonObject& root = jsonBuffer.createObject();
   
@@ -57,7 +64,6 @@ void format_command(OUT_DATA data, char *buf, int bufsize){
   root["fsr_current"] = data.fsr_current_val;
   root["fsr_full"] = data.fsr_full_val;
 
-  Serial.println(bufsize);
-  root.printTo(buf, bufsize);
+  root.printTo(cmdbuf, cmdbufsize);
 }
 

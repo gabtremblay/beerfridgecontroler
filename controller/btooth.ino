@@ -23,18 +23,18 @@ void setup_btooth(){
   btooth_serial.begin(BTOOTH_RATE);
 }
 
-void read_btooth_data(char *buf, int bufsize){
+int read_btooth_data(char *buf, int bufsize){
   int rcursor = 0;
-  if (btooth_serial.available()) {
-    while(btooth_serial.available() && rcursor < bufsize) {
+  while(btooth_serial.available() && (rcursor < bufsize)) {
       buf[rcursor++] = btooth_serial.read();
-    }
   }
   // Make sure we terminate the string
   buf[rcursor] = '\0';
+  return rcursor;
 }
 
 void write_btooth_data(const char *data){
   btooth_serial.println(data);
+  //btooth_serial.flush();
 }
 

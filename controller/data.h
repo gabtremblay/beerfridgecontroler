@@ -40,10 +40,10 @@
 
 // Change this key so no rogue connected phone can fsck the system.
 // AKA "drunk friend protection"
-#define API_KEY "2a5e0eec-e216-4881-858b-01db32d74c6b"
+#define API_KEY "2a5e0eec"
 
 // cmd: in case of ok or err, all values will be 0
-// Possible values : "SET" (default), "OK", "ERR"
+// Possible values : "SET" (default), 
 struct OUT_DATA {
   char *cmd;                      
   unsigned long fl1_total_ml = 0;    // Total ml that flowed trough flow meter #1 since reset
@@ -56,9 +56,21 @@ struct OUT_DATA {
   unsigned long fsr_full_val = 0;    // FSR value when bottle is full
 };
 
+// Replies "OK", "ERR"
+struct CMD_REPLY {
+  char *cmd;
+};
+
 // recv should be in the format of
 // {"api_key":"", "cmd":"cmd_name", "value": 0}
-// Value can be null 
+// Value can be null
+// CMDS:
+// rst : set all eeprom values to 0  (null val)
+// set_fl1 : Set flow meter 1 total ml
+// set_fl2 : Set flow meter 2 total ml 
+// rec_fsr_empty: Record fsr value as empty (null val)
+// rec_fsr_full: Record fsr value as full (null val)
+
 struct RCVD_CMD {
   boolean parse_success = true;
   const char* cmd;
@@ -66,6 +78,7 @@ struct RCVD_CMD {
 };
 
 RCVD_CMD parse_command(String rcvd_command);
-void format_command(OUT_DATA data, char *buf, int bufsize);
+void format_command(OUT_DATA data, char *cmdbuf, int cmdbufsize);
+void format_reply(CMD_REPLY data, char *replybuf, int replybufsize);
 
 #endif

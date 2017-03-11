@@ -31,7 +31,7 @@
 SoftwareSerial btooth_serial(BTOOTH_RX_PIN, BTOOTH_TX_PIN);
 
 void setup_btooth();
-void read_btooth_data(char *buf, int bufsize);
+int read_btooth_data(char *buf, int bufsize);
 void write_btooth_data(const char *data);
 
 #endif

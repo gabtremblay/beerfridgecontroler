@@ -23,11 +23,11 @@ void setup_eeprom(){
   uint8_t eepStatus = eep.begin(twiClock400kHz); 
   
   if (eepStatus) {
-      Serial.print("EEprom.begin() failed, status = ");
+      Serial.print(F("EEprom.begin() failed, status = "));
       Serial.println(eepStatus);
       while (1);
   }
-  Serial.println("EEprom init success");
+  Serial.println(F("EEprom init success"));
 
 }
 

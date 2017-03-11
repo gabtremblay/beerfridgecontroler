@@ -27,12 +27,6 @@
  // EEprom save condition are triggered after each pour or when the user sets
  // the CO2 level base or isert a new tank.
 
- 
- // Todo : Finish comms, Implement incoming commands
- // rework : Memory problems. We should not return so many objects.
- // It seems we can'T properly parse the received command. is it because it lacks a \0? Or because we use a string.
- // I still dont know.
-
 #include <Wire.h>
 #include "flow_meters.h"
 #include "eeprom.h"
@@ -55,14 +49,14 @@ SimpleTimer read_fridge_data_timer;
 SimpleTimer communicate_timer;
 
 // State change detection
-boolean fl1_pouring = false;
-boolean fl2_pouring = false;
-
 // CO2 is not the same.
 // We need "empty bottle value" and "full bottle weight"
 // We save only when "FULL bottle Calibrated"
 // Level is always calculated between those two deltas. No need to save values live since we
 // get the weight at all time, not based on flow.
+boolean fl1_pouring = false;
+boolean fl2_pouring = false;
+
 
 void setup() {
   Serial.begin(115200);   // We'll send debugging information via the Serial monitor
@@ -78,6 +72,9 @@ void setup() {
   // Setup bluetooth comms
   setup_btooth();
 
+  // Delay a bit so everything can come up (Serial btooth)
+  delay(1000);
+
   // Run initial readings so we have data
   // This is necessary since our read timer wont read before 1 sec.
   read_fridge_data();
@@ -88,8 +85,21 @@ void setup() {
   read_fridge_data_timer.setInterval(1000, read_fridge_data);
 
   // Comms should have a reasonable lag. ~1s
-  communicate_timer.setInterval(1000, communicate);
+  communicate_timer.setInterval(500, communicate);
 
+}
+
+void reset_eeprom(){
+  // Reset all eeprom values to 0 
+  // Use for first boot or for new eeprom
+  save_flow1_value(0);
+  save_flow2_value(0);
+  save_fsr_empty_value(0);
+  save_fsr_full_value(0);
+  set_current_fl1_total_ml(0);
+  set_current_fl2_total_ml(0);
+  saved_values.fsr_empty_val = 0;
+  saved_values.fsr_full_val = 0;
 }
 
 void loop(){
@@ -127,17 +137,16 @@ void read_fridge_data() {
   }
 
   #ifdef DEBUG
-    print_debug();
+   // print_debug();
   #endif
 }
 
-void communicate() {
-  // Use a char[] instead of a const char to save memory
-  char acmd[] = "SET";
-
-  // Generate output data
+void generate_status_cmd(char *buf, int bufsize){
   OUT_DATA data;
-  data.cmd = acmd;
+  char set_cmd[] = "SET";
+  
+  // Generate output data
+  data.cmd = set_cmd;
   data.fl1_total_ml = current_meters_status.fl1_total_ml;
   data.fl1_rate_mlsec = current_meters_status.fl1_rate_mlsec;
   data.fl2_total_ml = current_meters_status.fl2_total_ml;
@@ -146,64 +155,124 @@ void communicate() {
   data.fsr_empty_val = saved_values.fsr_empty_val;
   data.fsr_current_val = current_fsr_readout.raw_value;
   data.fsr_full_val = saved_values.fsr_full_val;
-
+  
   // We use a stack allocated buffer to reduce memory usage
   // the kind of str we're dealing with is kind of too big for the little arduino
-  char outbuf[300];
-  format_command(data, outbuf, sizeof(outbuf));
-
-  #ifdef DEBUG
-    Serial.println(outbuf);
-  #endif
-  
-  write_btooth_data(outbuf);
-
-  char inbuf[128];
-  read_btooth_data(inbuf, sizeof(inbuf));
-
-
-  // Looks like we need to use a string... or parse before.
-  //RCVD_CMD rcvd_cmd = parse_command(inbuf);
-  
-  //if(!rcvd_cmd.parse_success){
-   // Serial.println("PARSE ERROR");
-    
-  //}
-  #ifdef DEBUG
-    Serial.println(inbuf);
-  #endif
+  format_command(data, buf, bufsize);
 }
 
+void generate_reply_cmd(char *cmd, char *buf, int bufsize){
+  CMD_REPLY data;
+  // Generate output data
+  data.cmd = cmd;
+  format_reply(data, buf, bufsize);
+}
 
+void communicate() {
+  char err_cmd[] = "ERR";
+  char ok_cmd[] = "OK";
+  char combuf[200];
+  char reply_buf[32];
+  
+  generate_status_cmd(combuf, sizeof(combuf));
+  write_btooth_data(combuf);
+
+  // Read incoming command
+  memset(combuf, 0, sizeof(combuf));
+  int recv_size = read_btooth_data(combuf, sizeof(combuf));
+
+  // Empty command, could be a fluke
+  if(recv_size <= 0){
+    return;
+  }
+  
+  #ifdef DEBUG
+    Serial.println(combuf);
+  #endif
+  
+  RCVD_CMD rcvd_cmd = parse_command(combuf);
+  
+  if(!rcvd_cmd.parse_success){
+    generate_reply_cmd(err_cmd, reply_buf, sizeof(reply_buf));
+    write_btooth_data(reply_buf);
+    return;
+  } 
+
+  #ifdef DEBUG
+    Serial.println(rcvd_cmd.cmd);
+  #endif
+  
+  if(String(rcvd_cmd.cmd) == "rst"){
+    #ifdef DEBUG
+      Serial.println("Resetting everything");
+    #endif
+    reset_eeprom();
+  } else if (String(rcvd_cmd.cmd) == "set_fl1") {
+    #ifdef DEBUG
+      Serial.println(F("SET fl1"));
+    #endif
+    save_flow1_value(rcvd_cmd.value);
+    set_current_fl1_total_ml(rcvd_cmd.value);
+  } else if (String(rcvd_cmd.cmd) == "set_fl2") {
+    #ifdef DEBUG
+      Serial.println(F("SET fl2"));
+    #endif
+    save_flow2_value(rcvd_cmd.value);
+    set_current_fl2_total_ml(rcvd_cmd.value);
+  } else if (String(rcvd_cmd.cmd) == "rec_fsr_empty") {
+    #ifdef DEBUG
+      Serial.println(F("Rec empty fsr"));
+    #endif
+    saved_values.fsr_empty_val = current_fsr_readout.raw_value;
+    save_fsr_empty_value(current_fsr_readout.raw_value);
+  } else if (String(rcvd_cmd.cmd) == "rec_fsr_full") {
+    #ifdef DEBUG
+      Serial.println(F("Rec full FSR"));
+    #endif
+    saved_values.fsr_full_val = current_fsr_readout.raw_value;
+    save_fsr_full_value(current_fsr_readout.raw_value);
+  } else {
+    #ifdef DEBUG
+      Serial.println(F("Unknown command"));
+    #endif
+    generate_reply_cmd(err_cmd, reply_buf, sizeof(reply_buf));
+    write_btooth_data(reply_buf);
+    return;
+  }
+  
+  // Generate a command "OK"
+  generate_reply_cmd(ok_cmd, reply_buf, sizeof(reply_buf));
+  write_btooth_data(reply_buf);
+}
+
+#ifdef DEBUG
 void print_debug() {
-   //current_meters_status = compute_flow_meters_ml();
-
-   Serial.print("Analog reading = ");
+   Serial.print(F("Analog reading = "));
    Serial.println(current_fsr_readout.raw_value);
-   Serial.print("Adjusted: ");
+   Serial.print(F("Adjusted: "));
    Serial.print(current_fsr_readout.scaled_value);
-   Serial.println("%");
+   Serial.println(F("%"));
 
-   Serial.print("Temperature (C): ");
+   Serial.print(F("Temperature (C): "));
    Serial.println(current_temp);
    
    // Print the flow rate for this second in litres / minute
-   Serial.print("Flow One, ");
+   Serial.print(F("Flow One, "));
    // Print the number of litres flowed in this second
-   Serial.print("  Current Liquid Flowing: ");             // Output separator
+   Serial.print(F("  Current Liquid Flowing: "));             // Output separator
    Serial.print(current_meters_status.fl1_rate_mlsec);
-   Serial.print("mL/Sec");
-   Serial.print(",  Total:  ");
+   Serial.print(F("mL/Sec"));
+   Serial.print(F(",  Total:  "));
    Serial.print(current_meters_status.fl1_total_ml);
-   Serial.println("mL");
+   Serial.println(F("mL"));
     
    // Print the flow rate for this second in litres / minute
-   Serial.print("Flow Two, ");
-   Serial.print("  Current Liquid Flowing: ");             // Output separator
+   Serial.print(F("Flow Two, "));
+   Serial.print(F("  Current Liquid Flowing: "));             // Output separator
    Serial.print(current_meters_status.fl2_rate_mlsec);
-   Serial.print("mL/Sec");
-   Serial.print(",  Total:  ");
+   Serial.print(F("mL/Sec"));
+   Serial.print(F(",  Total:  "));
    Serial.print(current_meters_status.fl2_total_ml);
-   Serial.println("mL");
+   Serial.println(F("mL"));
 }
-
+#endif
