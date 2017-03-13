@@ -25,6 +25,7 @@
 #define FLOW2_ADDR 32
 #define FSR_EMPTY_ADDR 64
 #define FSR_FULL_ADDR 96
+#define FLOW_CAL 128
 
 // Arduino pin map https://www.arduino.cc/en/Hacking/PinMapping168
 extEEPROM eep(kbits_2, 1, 16);
@@ -34,6 +35,7 @@ struct EEPROM_VAUES {
   unsigned long flm2_cur_ml = 0;
   unsigned long fsr_empty_val = 0;
   unsigned long fsr_full_val = 0;
+  float fl_cal = 0.0;
 };
 
 EEPROM_VAUES get_saved_eeprom_values();
@@ -42,6 +44,7 @@ void save_flow1_value(unsigned long value);
 void save_flow2_value(unsigned long value);
 void save_fsr_empty_value(unsigned long value);
 void save_fsr_full_value(unsigned long value);
+void save_flow_cal_value(float value);
 
 #endif
 

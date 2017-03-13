@@ -38,6 +38,9 @@ EEPROM_VAUES get_saved_eeprom_values() {
   current_values.flm2_cur_ml = EEPROMReadlong(FLOW2_ADDR, eep);
   current_values.fsr_empty_val = EEPROMReadlong(FSR_EMPTY_ADDR, eep);
   current_values.fsr_full_val = EEPROMReadlong(FSR_FULL_ADDR, eep);
+
+  // Restore flow calibration
+  current_values.fl_cal = (float)(EEPROMReadlong(FLOW_CAL, eep) / 100.0);
   return current_values;
 }
 
@@ -47,6 +50,7 @@ void save_eeprom_values(EEPROM_VAUES current_values){
   save_flow2_value(current_values.flm2_cur_ml);
   save_fsr_empty_value(current_values.fsr_empty_val);
   save_fsr_full_value(current_values.fsr_full_val);
+  save_flow_cal_value(current_values.fl_cal);
 }
 
 void save_flow1_value(unsigned long value){
@@ -65,6 +69,11 @@ void save_fsr_full_value(unsigned long value){
   EEPROMWritelong(FSR_FULL_ADDR, value, eep);
 }
 
+// Flow cal is saved as long. divided to get a float.
+void save_flow_cal_value(float value){
+  unsigned long to_save = (unsigned long)(value * 100);
+  EEPROMWritelong(FLOW_CAL, to_save, eep);
+}
 
 void EEPROMWritelong(int address, unsigned long value, extEEPROM eeprom)
 {

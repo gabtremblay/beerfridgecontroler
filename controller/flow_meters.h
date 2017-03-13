@@ -29,7 +29,7 @@
 // The hall-effect flow sensor outputs approximately 4 pulses per second per litre/minute of flow.
 // Adjust to your own flow meter values
 // Could vary between 1 and 100 depending on sensor model
-#define CALIBRATION_FACTOR 75.0
+float calibration_factor;
 
 // Serial resettable values, used for counting purposes
 // Should be loaded and saved to eeprom
@@ -39,7 +39,6 @@ struct FLOW_METERS {
   unsigned long fl2_total_ml = 0;
   unsigned long fl2_rate_mlsec = 0;
 };
-
 
 // State vars
 volatile int flow_meter_one_pulses;  // volatile since it will be incremented by interrupt

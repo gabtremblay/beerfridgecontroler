@@ -24,7 +24,7 @@
 #include "flow_meters.h"
    
 
-void setup_flow_meters(float fl1_total_eeprom, float fl2_total_eeprom) {
+void setup_flow_meters(float fl1_total_eeprom, float fl2_total_eeprom, float flow_calibration_factor) {
   pinMode(FLOW_METER_ONE_DATA_PIN, INPUT);
   digitalWrite(FLOW_METER_ONE_DATA_PIN, HIGH);
   
@@ -43,6 +43,9 @@ void setup_flow_meters(float fl1_total_eeprom, float fl2_total_eeprom) {
   meters_status.fl1_rate_mlsec = 0;
   meters_status.fl2_rate_mlsec = 0;
 
+  // Set calibration factor
+  set_flow_meter_calibration(flow_calibration_factor);
+  
   // Start
   attach_flow_interrupts();
 }
@@ -53,6 +56,10 @@ void set_current_fl1_total_ml(unsigned long ml){
 
 void set_current_fl2_total_ml(unsigned long ml){
   meters_status.fl2_total_ml = ml;
+}
+
+void set_flow_meter_calibration(float val){
+    calibration_factor = val;
 }
 
 /*
@@ -95,8 +102,8 @@ FLOW_METERS compute_flow_meters_ml(void)
     // that to scale the output. We also apply the calibrationFactor to scale the output
     // based on the number of pulses per second per units of measure (litres/minute in
     // this case) coming from the sensor.
-    flow_meter_one_rate = ((1000.0 / (millis() - old_time)) * flow_meter_one_pulses) / CALIBRATION_FACTOR;
-    flow_meter_two_rate = ((1000.0 / (millis() - old_time)) * flow_meter_two_pulses) / CALIBRATION_FACTOR;
+    flow_meter_one_rate = ((1000.0 / (millis() - old_time)) * flow_meter_one_pulses) / calibration_factor;
+    flow_meter_two_rate = ((1000.0 / (millis() - old_time)) * flow_meter_two_pulses) / calibration_factor;
     
     // Note the time this processing pass was executed. Note that because we've
     // disabled interrupts the millis() function won't actually be incrementing right

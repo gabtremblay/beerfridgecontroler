@@ -35,6 +35,5 @@ int read_btooth_data(char *buf, int bufsize){
 
 void write_btooth_data(const char *data){
   btooth_serial.println(data);
-  //btooth_serial.flush();
 }
 

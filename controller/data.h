@@ -54,6 +54,7 @@ struct OUT_DATA {
   unsigned long fsr_empty_val = 0;   // FSR value when bottle is empty
   unsigned long fsr_current_val = 0; // Current FSR reading
   unsigned long fsr_full_val = 0;    // FSR value when bottle is full
+  float fl_cal_factor = 75.0;    // Flow meter calibration factor
 };
 
 // Replies "OK", "ERR"

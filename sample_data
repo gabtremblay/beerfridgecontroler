@@ -1,0 +1,26 @@
+// Commands
+echo \{\"api_key\":\"2a5e0eec\",\"cmd\":\"rst\",\"value\":0\} >> /dev/rfcomm0
+echo \{\"api_key\":\"2a5e0eec\",\"cmd\":\"set_fl1\",\"value\":1200\} >> /dev/rfcomm0
+echo \{\"api_key\":\"2a5e0eec\",\"cmd\":\"set_fl2\",\"value\":1700\} >> /dev/rfcomm0
+echo \{\"api_key\":\"2a5e0eec\",\"cmd\":\"rec_fsr_empty\",\"value\":0\} >> /dev/rfcomm0
+echo \{\"api_key\":\"2a5e0eec\",\"cmd\":\"rec_fsr_full\",\"value\":0\} >> /dev/rfcomm0
+
+// This command will be divided by 100 to give a base 100 float 
+// if you wish for a 75.1 factor, send 7510.
+echo \{\"api_key\":\"2a5e0eec\",\"cmd\":\"set_fl_cal\",\"value\":7510\} >> /dev/rfcomm0
+
+
+// Broken Commands (Test only)
+echo \{\"api_key\":\"BROKEN\",\"cmd\":\"rec_fsr_full\",\"value\":0\} >> /dev/rfcomm0
+echo \{\"api_key\":\"2a5e0eec\",\"cmd\":\"BADCMD\",\"value\":0\} >> /dev/rfcomm0
+
+
+// Typical replies
+{"cmd":"OK"}
+{"cmd":"ERR"}
+
+// Feed data
+{"cmd":"SET","fl1_total":1200,"fl1_rate":0,"fl2_total":1700,"fl2_rate":0,"temp_c":24.90,"fsr_empty":0,"fsr_current":0,"fsr_full":0,"fl_cal":75.00}
+{"cmd":"SET","fl1_total":1200,"fl1_rate":0,"fl2_total":1700,"fl2_rate":0,"temp_c":24.90,"fsr_empty":0,"fsr_current":0,"fsr_full":0,"fl_cal":75.00}
+{"cmd":"SET","fl1_total":1200,"fl1_rate":0,"fl2_total":1700,"fl2_rate":0,"temp_c":23.44,"fsr_empty":0,"fsr_current":0,"fsr_full":0,"fl_cal":75.00}
+

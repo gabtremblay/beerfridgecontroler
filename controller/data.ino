@@ -21,17 +21,23 @@
 
 RCVD_CMD parse_command(String rcvd_command){
   RCVD_CMD received_command;
-  StaticJsonBuffer<200> jsonBuffer;
+  StaticJsonBuffer<128> jsonBuffer;
   JsonObject& root = jsonBuffer.parseObject(rcvd_command);
 
   // Test if parse is sucessful
   if (!root.success()) {
+    #ifdef DEBUG
+      Serial.println("Parse error");
+    #endif
     received_command.parse_success = false;
     return received_command;
   }
 
   // Test API KEY
   if(root["api_key"] != API_KEY){
+    #ifdef DEBUG
+      Serial.println("Wrong API KEY");
+    #endif
     received_command.parse_success = false;
     return received_command;
   }
@@ -63,6 +69,7 @@ void format_command(OUT_DATA data, char *cmdbuf, int cmdbufsize){
   root["fsr_empty"] = data.fsr_empty_val;
   root["fsr_current"] = data.fsr_current_val;
   root["fsr_full"] = data.fsr_full_val;
+  root["fl_cal"] = data.fl_cal_factor;
 
   root.printTo(cmdbuf, cmdbufsize);
 }

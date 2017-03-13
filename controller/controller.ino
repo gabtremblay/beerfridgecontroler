@@ -36,7 +36,9 @@
 #include "SimpleTimer.h"
 #include "data.h"
 
-#define DEBUG true
+// WARNING: Defining this *will* cause a lot of irregular behaviour.
+// Since we're short on SRAM.
+//#define DEBUG
 
 // State vars
 FLOW_METERS current_meters_status;
@@ -67,7 +69,7 @@ void setup() {
   saved_values = get_saved_eeprom_values();
   
   // Setup flow meter reader
-  setup_flow_meters(saved_values.flm1_cur_ml, saved_values.flm2_cur_ml);
+  setup_flow_meters(saved_values.flm1_cur_ml, saved_values.flm2_cur_ml, saved_values.fl_cal);
 
   // Setup bluetooth comms
   setup_btooth();
@@ -98,6 +100,7 @@ void reset_eeprom(){
   save_fsr_full_value(0);
   set_current_fl1_total_ml(0);
   set_current_fl2_total_ml(0);
+  save_flow_cal_value(75.0);
   saved_values.fsr_empty_val = 0;
   saved_values.fsr_full_val = 0;
 }
@@ -137,7 +140,7 @@ void read_fridge_data() {
   }
 
   #ifdef DEBUG
-   // print_debug();
+    print_debug();
   #endif
 }
 
@@ -155,6 +158,7 @@ void generate_status_cmd(char *buf, int bufsize){
   data.fsr_empty_val = saved_values.fsr_empty_val;
   data.fsr_current_val = current_fsr_readout.raw_value;
   data.fsr_full_val = saved_values.fsr_full_val;
+  data.fl_cal_factor = calibration_factor;
   
   // We use a stack allocated buffer to reduce memory usage
   // the kind of str we're dealing with is kind of too big for the little arduino
@@ -231,6 +235,13 @@ void communicate() {
     #endif
     saved_values.fsr_full_val = current_fsr_readout.raw_value;
     save_fsr_full_value(current_fsr_readout.raw_value);
+  } else if (String(rcvd_cmd.cmd) == "set_fl_cal") {
+    #ifdef DEBUG
+      Serial.println(F("Set FL Cal"));
+    #endif
+    float recv_value = rcvd_cmd.value/100.0;
+    save_flow_cal_value(recv_value);
+    set_flow_meter_calibration(recv_value);
   } else {
     #ifdef DEBUG
       Serial.println(F("Unknown command"));
